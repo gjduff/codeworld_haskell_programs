@@ -7,6 +7,7 @@ import CodeWorld
      draw circular flowers.
      
      Lena wants purple AND pink flowers. figure out how.
+     may redo this project with an actual data structure holding color info
 -}
 tree :: Integer -> Double -> Picture
 tree 0 inc = (colored pink (solidCircle inc))
