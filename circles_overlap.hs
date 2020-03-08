@@ -2,7 +2,7 @@ import CodeWorld
 
 type Coords = (Double, Double)
 
-
+-- the state
 data State = State {
                      getCircleCoords :: [Coords]
                     ,getCircleColors :: [Color]
