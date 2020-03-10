@@ -1,1 +1,4 @@
 notes.txt
+*.exe
+*.hi
+*.o

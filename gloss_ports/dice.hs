@@ -1,5 +1,6 @@
  {-# LANGUAGE OverloadedStrings #-}
-import CodeWorld
+import Graphics.Gloss
+import Graphics.Gloss.Interface.Pure.Game
 
 {-
      Initial state of the dice
@@ -15,9 +16,11 @@ initStates = 1
 eventHandler :: Event -> Int -> Int
 eventHandler event diceState = 
    case event of
-     KeyPress "Up"   -> if diceState == 5 then 0 else diceState + 1
-     KeyPress "Down" -> if diceState == 0 then 5 else diceState - 1
+     EventKey (SpecialKey KeyUp) Down _ (x,y)   -> if diceState == 5 then 0 else diceState + 1
+     EventKey (SpecialKey KeyDown) Down _ (x,y) -> if diceState == 0 then 5 else diceState - 1
      _               -> diceState
+
+
 
 
 {-
@@ -40,22 +43,48 @@ allDice = [dice1,dice2,dice3,dice4,dice5,dice6]
 {-
      Translate a a picture by coordinates found in a tuple
 -}
-tupTrans :: Picture -> (Double,Double) -> Picture
-tupTrans pic coords = translated (fst coords) (snd coords) pic
+tupTrans :: Picture -> (Float,Float) -> Picture
+tupTrans pic coords = Translate (fst coords) (snd coords) pic
 
 
 {-
      given the current state, draw the corresponding dice
 -}
 newStatePicture :: Int -> Picture
-newStatePicture diceState = 
-  dots & (colored green $ solidRectangle 4 4)
+newStatePicture diceState = Scale 20 20 $
+  mappend (Color green $ rectangleSolid 4 4) dots
   where
-    dots = foldl (&) blank (map (tupTrans (solidCircle 0.25) ) (allDice !! diceState) )
+    dots = foldl (mappend) blank (map (tupTrans (ThickCircle 0.25 0.25) ) (allDice !! diceState) )
 
 
 {-
      Main program. just start the activity
 -}
+--main :: IO ()
+--main = activityOf initStates eventHandler newStatePicture
+
+
+
+--updateFunc :: Float -> State -> State
+updateFunc :: Float -> Int -> Int
+updateFunc dt state = state 
+
+
 main :: IO ()
-main = activityOf initStates eventHandler newStatePicture
+main = activityOf
+  newStatePicture
+  eventHandler
+  updateFunc
+
+
+activityOf :: (Int -> Picture) -> (Event -> Int -> Int) -> 
+              (Float -> Int -> Int) -> IO ()
+activityOf = play 
+   windowDisplay
+   white
+   1
+   initStates
+
+
+windowDisplay :: Display
+windowDisplay = InWindow "Window" (640, 480) (50, 10)
