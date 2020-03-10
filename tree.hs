@@ -23,7 +23,7 @@ tree n inc = polyline [(0,0),(0,1)] & translated 0 1 (
 -}
 controller :: Double -> Picture
 controller t | t < 10    =  tree 6 (increments !! (round t))
-             | otherwise =  tree 6 0.35
+             | otherwise =  tree 6 0.36
   where
     increments :: [Double]
     increments = map (*0.035) [0 .. 10]
@@ -34,5 +34,5 @@ controller t | t < 10    =  tree 6 (increments !! (round t))
 -}
 main = do
   animationOf controller
--- drawingOf (tree 5 0.35)
+-- drawingOf (tree 5 0.36)
 
