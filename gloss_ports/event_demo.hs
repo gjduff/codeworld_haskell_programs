@@ -61,66 +61,55 @@ activityOf initStates processEvents render = PG.play
 --     Paste Code world code below!!                --
 {----------------------------------------------------}
 
-{-
-     Initial state of the dice
--}
-initStates :: Int
-initStates = 1
+
 
 
 {-
-     handle key press event given the event and the current state.
-     result will be the next state
+     All the states needed for this interactive program.
+     In this case, just radii for two circles
 -}
-eventHandler :: Event -> Int -> Int
-eventHandler event diceState = 
+data States = States { radius1 :: Double 
+                     , radius2 :: Double }
+
+
+{-
+     Takes a States data type which delivers two radii and creates
+     a picture of two circles with those radii
+-}
+twoCircles :: States -> Picture
+twoCircles (States r1 r2) = (translated 2 0 $ colored green $ circle r1) &
+                            (translated (-2) 0 $ colored red $ circle r2)
+
+
+{-
+     This function will be passed to activityOf as a callback.
+     when an event occurs, it will be called and it will
+     "return" the updated state (the two processed radii)
+-}
+processEventToUpdateState :: Event -> States -> States
+processEventToUpdateState event (States r1 r2) =
    case event of
-     KeyPress "Up"   -> if diceState == 5 then 0 else diceState + 1
-     KeyPress "Down" -> if diceState == 0 then 5 else diceState - 1
-     _               -> diceState
+     KeyPress "Up"   -> (States (r1+1) (r2-1))
+     KeyPress "Down" -> (States (r1-1) (r2+1))
+     _               -> States r1 r2
 
 
 {-
-     The coordinates of the little dots on the dice for each side
+     The initial state of the program. in this case, starting
+     radii of the two circles
 -}
--- (    0),(    0)  mid mid
--- (-1.25),(    0)  mid left           ( 1.25),(    0)  mid right
--- (-1.25),( 1.25)  top left           ( 1.25),( 1.25)  top right 
--- (-1.25),(-1.25)  bottom left        ( 1.25),(-1.25)  bottom right
-dice1 = [(0,0)]
-dice2 = [((-1.25), (1.25)), ((1.25), (-1.25))]
-dice3 = [(0,0), ((-1.25), (1.25)), ((1.25), (-1.25))]
-dice4 = [((-1.25), (1.25)), ((1.25), (-1.25)), ((1.25), (1.25)), ((-1.25), (-1.25))]
-dice5 = [(0,0), ((-1.25), (1.25)), ((1.25), (-1.25)), ((1.25), (1.25)), ((-1.25), (-1.25))]
-dice6 = [((-1.25), (1.25)), ((1.25), (-1.25)), ((1.25), (1.25)), ((-1.25), (-1.25)), ((-1.25), (0)), ((1.25), (0))]
-
-allDice = [dice1,dice2,dice3,dice4,dice5,dice6]
+initialStates :: States
+initialStates = States 4 4
 
 
 {-
-     Translate a a picture by coordinates found in a tuple
--}
-tupTrans :: Picture -> (Double,Double) -> Picture
-tupTrans pic coords = translated (fst coords) (snd coords) pic
-
-
-{-
-     given the current state, draw the corresponding dice
--}
-newStatePicture :: Int -> Picture
-newStatePicture diceState = 
-  dots & (colored green $ solidRectangle 4 4)
-  where
-    dots = foldl (&) blank (map (tupTrans (solidCircle 0.25) ) (allDice !! diceState) )
-
-
-{-
-     Main program. just start the activity
+     main program. activityOf is our IO action. it requires
+     one param that's the initial state, then next a function that will be an event callback
+     that takes event and state as a parameter and produces the new state,
+     finally the picture producing function that will accept that new state and draw accordingly
 -}
 main :: IO ()
-main = activityOf initStates eventHandler newStatePicture
+main = activityOf initialStates processEventToUpdateState twoCircles
 
 
-
-
-
+         
