@@ -124,6 +124,7 @@ eventFunc f event state =
     PG.EventKey (PG.SpecialKey PG.KeyDown) PG.Down _ (x,y)     -> f (KeyPress "Down") state
     PG.EventKey (PG.SpecialKey PG.KeyLeft) PG.Down _ (x,y)     -> f (KeyPress "Left") state
     PG.EventKey (PG.SpecialKey PG.KeyRight) PG.Down _ (x,y)    -> f (KeyPress "Right") state
+    PG.EventKey (PG.SpecialKey PG.KeyEnter) PG.Down _ (x,y)    -> f (KeyPress "Enter") state
     PG.EventKey (PG.MouseButton PG.LeftButton) PG.Down _ (x,y) -> f (PointerPress (x/20,y/20)) state
     PG.EventKey (PG.MouseButton PG.LeftButton) PG.Up _ (x,y)   -> f (PointerRelease (x/20,y/20)) state
     PG.EventMotion (x,y)                                       -> f (PointerMovement (x/20,y/20)) state
@@ -431,6 +432,7 @@ processEventToUpdateStateBetween :: Event -> States -> States
 processEventToUpdateStateBetween event (States px py lvl boxXYs atDests mpress screen) =
    case event of
      PointerPress (x,y) -> (States px py lvl boxXYs atDests mpress Playing)
+     KeyPress "Enter"   -> (States px py lvl boxXYs atDests mpress Playing)
      _                  -> (States px py lvl boxXYs atDests mpress screen)
      
 

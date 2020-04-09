@@ -245,6 +245,7 @@ processEventToUpdateStateBetween :: Event -> States -> States
 processEventToUpdateStateBetween event (States px py lvl boxXYs atDests mpress screen) =
    case event of
      PointerPress (x,y) -> (States px py lvl boxXYs atDests mpress Playing)
+     KeyPress "Enter"   -> (States px py lvl boxXYs atDests mpress Playing)
      _                  -> (States px py lvl boxXYs atDests mpress screen)
      
 

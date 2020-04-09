@@ -67,6 +67,7 @@ eventFunc f event state =
     PG.EventKey (PG.SpecialKey PG.KeyDown) PG.Down _ (x,y) -> f (KeyPress "Down") state
     PG.EventKey (PG.SpecialKey PG.KeyLeft) PG.Down _ (x,y) -> f (KeyPress "Left") state
     PG.EventKey (PG.SpecialKey PG.KeyRight) PG.Down _ (x,y) -> f (KeyPress "Right") state
+    PG.EventKey (PG.SpecialKey PG.KeyEnter) PG.Down _ (x,y)    -> f (KeyPress "Enter") state
     PG.EventKey (PG.MouseButton PG.LeftButton) PG.Down _ (x,y)  -> f (PointerPress (x,y)) state
     _                                                      -> f (KeyPress "OTHER") state
 
