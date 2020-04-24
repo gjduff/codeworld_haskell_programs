@@ -1,44 +1,53 @@
 import CodeWorld
+import qualified Data.List as L
 
 type Coords = (Double, Double)
 
--- the state
+
 data State = State {
                      getCircleCoords :: [Coords]
                     ,getCircleColors :: [Color]
-                    ,getCircleDragged :: [Bool]
+                    ,getCircleDragged :: Maybe Int
                     ,getMouseCoords :: Point 
                    }
                 
 circleRadius :: Double  
 circleRadius = 2
+-- 34  177   76
+-- 
+redX    = (RGBA 1.0  0.0  0.0  0.6)
+blueX   = (RGBA (-0.4)  (-0.2)  0.6  0.4)
+yellowX = (RGBA 0.9  0.9  0.0  0.5)
 
 
 {-
-     Set the initial state of the astronaut: ie - position
+     Set the initial state of the circles
 -}
 initialState :: State
-initialState = State [(0,0),(2,0),(0,3)] [(RGBA 1 0 0 0.6), (RGBA 1 1 0 0.6), (RGBA 0 0 0.8 0.6)]
-                     [False, False, False] (0,0)
+initialState = State (take 12 $ cycle [(0,0),(2,0),(0,3)]) (take 12 $ cycle [redX, blueX, yellowX])
+                     Nothing (0,0)
 
 
 {-
      checks if mouse pointer within a circle
 -}
-checkMouseOverlaps :: (Point, Point) -> Bool
-checkMouseOverlaps ((cx,cy), (mx,my)) =
+checkMouseOverlaps :: Point -> Point -> Bool
+checkMouseOverlaps (mx,my) (cx,cy) =
   if hyp < circleRadius then True else False
   where 
     hyp = sqrt( (cx-mx)^2 + (cy-my)^2 )
+
 
 {-
      if dragged by mouse is true, make circle coords same as mouse's
      otherwise keep circle coords the same 
 -}
-moveWithMouse :: (Point, Point, Bool) -> Point
-moveWithMouse ((mx, my), (cx, cy), dragged) = if dragged 
-                                          then (mx, my) 
-                                          else (cx, cy)
+moveWithMouse :: Maybe Int -> (Point, Point, Int) -> Point
+moveWithMouse draggedIndex ((mx, my), (cx, cy), index) = 
+                            if draggedIndex == (Just index) 
+                            then (mx, my)
+                            else (cx,cy)
+
 
 
 {-
@@ -47,35 +56,26 @@ moveWithMouse ((mx, my), (cx, cy), dragged) = if dragged
 processEvent :: Event -> State -> State
 processEvent event state =
   case event of 
-    PointerRelease (x,y) -> State circleCoords circleColors allFalse (x,y)
+    PointerRelease (x,y) -> State circleCoords circleColors Nothing (x,y)
          where
            allFalse = (replicate numCircles False)
-    PointerPress (x,y) -> State circleCoords circleColors circleDraggeds (x,y)
+    PointerPress (x,y) -> State circleCoords circleColors draggedIndex (x,y)
          where
-           circleDraggeds = map checkMouseOverlaps 
-                           (zip circleCoords mouseRepl)
-           mouseRepl = replicate numCircles (x,y)
-    PointerMovement (x,y) -> State newCircleCoords circleColors circleDraggedsWM (x,y)
+           lst = map (checkMouseOverlaps (x,y)) circleCoords
+           draggedIndex = L.elemIndex True lst
+    PointerMovement (x,y) -> State newCircleCoords circleColors circleDraggedInd (x,y)
          where
-           newCircleCoords = map moveWithMouse (zip3a mouseRepl circleCoords circleDraggedsWM)
+           newCircleCoords = map (moveWithMouse circleDraggedInd) (L.zip3 mouseRepl circleCoords indices)
            mouseRepl = replicate numCircles (x,y)
     _   -> state
   where
     circleCoords = getCircleCoords state
     circleColors = getCircleColors state
-    circleDraggedsWM = getCircleDragged state
+    circleDraggedInd = getCircleDragged state
     numCircles = length circleCoords
-    
-{-
-     This function zips up three lists into a list of 3-tuples
--}
-zip3a :: [a] -> [b] -> [c] -> [(a,b,c)]
-zip3a list1 list2 list3 = t2
-  where
-    t1 = zip list1 list2
-    t2 = zipWith (\(x,y) z -> (x,y,z)) t1 list3
-    
+    indices = [0..(numCircles-1)]
 
+    
 {-
      draw circles according to the color and coordinates
      as obtained from the program state
@@ -101,6 +101,5 @@ drawCircle ((x,y), c) = translated x y $ colored ( c) $
 -}
 main :: IO ()
 main = activityOf initialState processEvent renderScene
-
 
 
