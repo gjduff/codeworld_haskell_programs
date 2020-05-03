@@ -1,7 +1,8 @@
 # Codeworld Haskell Programs
 
 This is a collection of Haskell programs that use the codeworld api.
-Some are interactive graphical programs and others are simply animations 
+Some are interactive graphical programs and others are simply animations.
+box_game.hs is an implementation of the famous sokoban game.
 
 ## Getting Started
 
