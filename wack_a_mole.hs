@@ -48,8 +48,11 @@ holeLocations = [
                   (-offsetX,-offsetY),    (0,-offsetY),    (offsetX,-offsetY)
                 ]
 
-hdTopLeft  = (2,2)
-hdBotRight = (2,2)
+hdTopLeft :: (Double, Double)
+hdTopLeft  = ((-2.0),2.0)
+
+hdBotRight :: (Double, Double)
+hdBotRight = (2.0,(-3.0))
 
 
 --
@@ -58,9 +61,26 @@ hdBotRight = (2,2)
 drawHole :: Point -> Picture
 drawHole point@(x,y) = translated x y $
                        (
-                         (colored red $ rectangle 4 4) &
                          (translated 0 (-2.8) $ solidClosedCurve [(-3,0), (0,1), (3,0), (0,-1)]  )
                        )
+
+
+
+--
+-- draw bounding box
+--
+drawBox :: Point -> Picture
+drawBox point@(x,y) = translated x y $
+                       (
+                         (colored red $ polygon [bb_topLeft, bb_topRight, bb_botRight, bb_botLeft])
+                       )
+  where
+    bb_topLeft  = ((fst hdTopLeft),  (snd hdTopLeft) )
+    bb_topRight = ((fst hdBotRight), (snd hdTopLeft) )
+    bb_botLeft  = ((fst hdTopLeft),  (snd hdBotRight) )
+    bb_botRight = ((fst hdBotRight), (snd hdBotRight) )
+
+
 
 --
 -- given a mole data structure figure out where it is, what color it should be
@@ -87,13 +107,15 @@ drawWorld world@(World clock _ moles msg) =
                   blank  & 
                   molesP &
                   holes  & 
-                  clockC &
-                  clockS &
-                  newMsg &
+                  --boxes  &
+                  --clockC &
+                  --clockS &
+                  --newMsg &
                   blank
                   )
   where
     holes  = foldr (&) blank (map drawHole holeLocations)
+    boxes  = foldr (&) blank (map drawBox holeLocations)
     molesP = foldr (&) blank (map drawMole moles)
     clockC = translated (-8) 0 $ lettering $ T.pack $ show clock
     clockS = translated (-12) 0 $ lettering $ T.pack $ show (clock/100)
@@ -114,9 +136,9 @@ updateMole mousePos time mole@(mtype, pos, uptime, up, wasHit) =
     upDuration = mDurationUp !! (fromEnum mtype)
     gotHit = wasHit ||
              (  ((fst mousePos) > (fst topCorner)) && ((fst mousePos) < (fst botCorner)) &&
-                ((snd mousePos) > (snd topCorner)) && ((snd mousePos) < (snd botCorner))    )
+                ((snd mousePos) < (snd topCorner)) && ((snd mousePos) > (snd botCorner))    )
                 
-    topCorner = ((fst (holeLocations !! pos)) - (fst hdTopLeft), (snd (holeLocations !! pos)) - (snd hdTopLeft))
+    topCorner = ((fst (holeLocations !! pos)) + (fst hdTopLeft), (snd (holeLocations !! pos)) + (snd hdTopLeft))
     botCorner = ((fst (holeLocations !! pos)) + (fst hdBotRight), (snd (holeLocations !! pos)) + (snd hdBotRight))
     
 
@@ -135,17 +157,43 @@ eventProc event world@(World clock lvl moles msg) =
          checkedMoles = map (updateMole (x,y) clock) moles
      PointerMovement (x,y) -> World clock lvl moles newMsg
        where
-         newMsg =  if(  (x > (fst topCorner)) && (x < (fst botCorner)) &&
-                        (y > (snd topCorner)) && (y < (snd botCorner))    )
-                   then "in  : " ++ show x ++ "," ++ show y
-                   else "out : " ++ show x ++ "," ++ show y
-                
-         topCorner = ((fst (holeLocations !! 7)) - (fst hdTopLeft), (snd (holeLocations !! 7)) - (snd hdTopLeft))
+         newMsg =       show (x > (fst topCorner)) ++ " " ++
+                        show (x < (fst botCorner)) ++ " " ++
+                        show (y < (snd topCorner)) ++ " " ++
+                        show (y > (snd botCorner)) 
+
+         topCorner = ((fst (holeLocations !! 7)) + (fst hdTopLeft), (snd (holeLocations !! 7)) + (snd hdTopLeft))
          botCorner = ((fst (holeLocations !! 7)) + (fst hdBotRight), (snd (holeLocations !! 7)) + (snd hdBotRight))
      _                  -> world
 
 
+{-
 
+         newMsg =  if(  (x > (fst topCorner)) && (x < (fst botCorner)) &&
+                        (y < (snd topCorner)) && (y > (snd botCorner))    )
+                   then show (r2 x) ++ "," ++ show (r2 y) ++ " in  " ++ 
+                        show (r2 (fst topCorner) ) ++ "," ++ show (r2 (snd topCorner) ) ++ "->" ++
+                        show (r2 (fst botCorner) ) ++ "," ++ show (r2 (snd botCorner) )
+                   else show (r2 x ) ++ "," ++ show (r2 y ) ++ " out " ++ 
+                        show (r2 (fst topCorner) ) ++ "," ++ show (r2 (snd topCorner) ) ++ "->" ++
+                        show (r2 (fst botCorner) ) ++ "," ++ show (r2 (snd botCorner) )
+
+
+         newMsg =       show (x > (fst topCorner)) ++ " " ++
+                        show (x < (fst botCorner)) ++ " " ++
+                        show (y < (snd topCorner)) ++ " " ++
+                        show (y > (snd botCorner)) 
+
+-}
+
+
+
+roundToPlaces :: Double -> Int -> Double
+roundToPlaces n s = fromIntegral (round (n * factor)) / factor
+    where factor = fromIntegral (10^s) 
+
+r2 :: Double -> Double
+r2 n = roundToPlaces n 2
 
 --
 -- Start the program
