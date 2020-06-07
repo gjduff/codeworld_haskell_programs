@@ -1,7 +1,9 @@
 import CodeWorld
 import qualified Data.Text as T
 
-data MType = Fast | Medium | Slow deriving (Eq, Ord, Enum)
+data MType  = Fast | Medium | Slow deriving (Eq, Ord, Enum)
+data GState = STARTSCREEN | PLAYING | LEVEL
+
 
 mColors :: [Color]
 mColors = [orange, purple, green]
@@ -17,20 +19,25 @@ type Mole = (MType, Int, Double, Bool, Bool)
 -- type of mole, position (0 to 8), time it pops up
 levels :: [[Mole]] 
 levels = [
+           [ (Slow, 0, 25, False, False), (Slow, 1, 17, False, False), (Slow, 2, 3, False, False), (Slow, 2, 10, False, False), (Slow, 3, 1, False, False), (Slow, 3, 17, False, False), (Slow, 3, 29, False, False), (Slow, 4, 7, False, False), (Slow, 4, 14, False, False), (Slow, 4, 23, False, False), (Slow, 5, 5, False, False), (Medium, 5, 15, False, False), (Slow, 5, 21, False, False), (Slow, 5, 29, False, False), (Slow, 6, 27, False, False), (Slow, 7, 12, False, False), (Slow, 8, 12, False, False), (Slow, 8, 20, False, False), (Slow, 8, 25, False, False), (Medium, 8, 30, False, False) ],
            [ (Medium, 0, 15, False, False), (Slow, 1, 5, False, False), (Slow, 3, 20, False, False), (Slow, 4, 25, False, False), (Slow, 4, 30, False, False), (Slow, 5, 25, False, False), (Fast, 7, 10, False, False) ],
            [ (Slow, 0, 25, False, False), (Slow, 2, 10, False, False), (Slow, 5, 5, False, False), (Medium, 5, 15, False, False), (Slow, 8, 20, False, False), (Medium, 8, 30, False, False) ],
            [ (Slow, 0, 20, False, False), (Slow, 1, 5, False, False), (Slow, 2, 25, False, False), (Medium, 3, 15, False, False), (Slow, 4, 30, False, False), (Medium, 5, 10, False, False), (Medium, 5, 25, False, False), (Slow, 7, 10, False, False), (Slow, 8, 20, False, False) ]
          ]
          
 -- The data of the game world
-data World = World { clock :: Double, currentLVL :: Int, lvlMoles :: [Mole], message :: String}
+data World = World { clock :: Double, 
+                     currentLVL :: Int, 
+                     lvlMoles :: [Mole], 
+                     message :: String,
+                     score :: Int}
 
 
 --
 -- The initial state of the game world
 --
 initState :: World
-initState = World 0 0 (levels !! 0) ""
+initState = World 0 0 (levels !! 0) "" 0
 
 --
 -- The holes and moles need to be a certain distance from each other
@@ -93,7 +100,8 @@ drawMole mole@(mtype, pos, uptime, up, wasHit) = translated x y $
     bodyColor = mColors !! (fromEnum mtype)
     x = fst $ holeLocations !! pos
     y = snd $ holeLocations !! pos
-    pic =  (translated 0.7 0 $ colored black $ solidCircle 0.2)       &
+    pic =  (translated 0 (-1.5) $ lettering $ T.pack $ "up-" ++ show up ++ " hit-"++ show wasHit) &
+           (translated 0.7 0 $ colored black $ solidCircle 0.2)       &
            (translated (-0.7) 0 $ colored black $ solidCircle 0.2)    &
            (colored bodyColor $ solidCircle 2)                        &
            (translated 0 (-1.5) $ colored bodyColor $ solidRectangle 4 3)
@@ -102,14 +110,15 @@ drawMole mole@(mtype, pos, uptime, up, wasHit) = translated x y $
 -- draw the entire game world including all holes and moles
 --
 drawWorld :: World -> Picture
-drawWorld world@(World clock _ moles msg) = 
+drawWorld world@(World clock _ moles msg _) = 
                   (
                   blank  & 
                   molesP &
+                  clockS &
                   holes  & 
                   --boxes  &
                   --clockC &
-                  --clockS &
+                  
                   --newMsg &
                   blank
                   )
@@ -118,13 +127,13 @@ drawWorld world@(World clock _ moles msg) =
     boxes  = foldr (&) blank (map drawBox holeLocations)
     molesP = foldr (&) blank (map drawMole moles)
     clockC = translated (-8) 0 $ lettering $ T.pack $ show clock
-    clockS = translated (-12) 0 $ lettering $ T.pack $ show (clock/100)
+    clockS = colored blue $ translated (-6) 1.5 $ lettering $ T.pack $ show (clock/100)
     newMsg = translated 0 (-6) $ lettering $ T.pack msg
                   
 
 --
 -- update a single mole. this will be a mappable function with current time and mouse pos as the partially
--- applied args of the mapped function
+-- applied args of the function mapped over the list of moles
 --
 updateMole :: Point -> Double -> Mole -> Mole
 updateMole mousePos time mole@(mtype, pos, uptime, up, wasHit) = 
@@ -134,10 +143,15 @@ updateMole mousePos time mole@(mtype, pos, uptime, up, wasHit) =
            then True
            else False
     upDuration = mDurationUp !! (fromEnum mtype)
-    gotHit = wasHit ||
-             (  ((fst mousePos) > (fst topCorner)) && ((fst mousePos) < (fst botCorner)) &&
-                ((snd mousePos) < (snd topCorner)) && ((snd mousePos) > (snd botCorner))    )
-                
+    -- mole is hit if mouse click within bounding box *and* mole is up.
+    -- for some reason have to use "up" in that first condition. if isUp
+    -- used, that somehow never evaluates to true in this if check
+    gotHit = if up==True && wasHit==False
+             then
+                (  ((fst mousePos) > (fst topCorner)) && ((fst mousePos) < (fst botCorner)) &&
+                    ((snd mousePos) < (snd topCorner)) && ((snd mousePos) > (snd botCorner))  )
+             else 
+                wasHit       
     topCorner = ((fst (holeLocations !! pos)) + (fst hdTopLeft), (snd (holeLocations !! pos)) + (snd hdTopLeft))
     botCorner = ((fst (holeLocations !! pos)) + (fst hdBotRight), (snd (holeLocations !! pos)) + (snd hdBotRight))
     
@@ -147,15 +161,15 @@ updateMole mousePos time mole@(mtype, pos, uptime, up, wasHit) =
 -- as time passes, update the clock and the moles for the game world
 --
 eventProc :: Event -> World -> World
-eventProc event world@(World clock lvl moles msg) =
+eventProc event world@(World clock lvl moles msg score) =
   case event of
-     TimePassing x      -> World (clock+1) lvl newMoles msg
+     TimePassing x      -> World (clock+1) lvl newMoles msg score
        where
          newMoles = map (updateMole (-1000,0) (clock/100)) moles 
-     PointerPress (x,y) -> World clock lvl checkedMoles msg
+     PointerPress (x,y) -> World clock lvl checkedMoles msg score
        where
          checkedMoles = map (updateMole (x,y) clock) moles
-     PointerMovement (x,y) -> World clock lvl moles newMsg
+     PointerMovement (x,y) -> World clock lvl moles newMsg score
        where
          newMsg =       show (x > (fst topCorner)) ++ " " ++
                         show (x < (fst botCorner)) ++ " " ++
