@@ -3,6 +3,7 @@
 This is a collection of Haskell programs that use the codeworld api.
 Some are interactive graphical programs and others are simply animations.
 box_game.hs is an implementation of the famous sokoban game.
+wack_a_mole.hs is an implementation of the famous mole game of the same name. 
 
 ## Getting Started
 
