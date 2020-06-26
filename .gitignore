@@ -2,5 +2,6 @@ notes.txt
 *.exe
 *.hi
 *.o
+*.prof
 howto_codeworld_api.txt
 howto_reduceCode_with_record_syntax.txt
