@@ -273,8 +273,8 @@ eventProcBetween event world@(World clock lvl moles msg score state tot life) =
 --
 -- as time passes, update the clock and the moles for the game world
 --
--- filter (<3) [1,2,3,4,5,6]
---
+-- **** sub-goal for game life: want to count moles that are passed their uptime (3rd field), no longer up (4th field)
+--                                                           and not hit (5th field). accomplish this first, then subtract that from "life" etc
 eventProcPlay :: Event -> World -> World
 eventProcPlay event world@(World clock lvl moles msg score state tot life) =
   case event of
@@ -330,9 +330,6 @@ r2 n = roundToPlaces n 2
 -- Start the program
 --
 main = activityOf initState eventProc drawWorld
-
-
-
 
 
 
